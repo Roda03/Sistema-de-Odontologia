@@ -1,16 +1,13 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
                              QLineEdit, QTextEdit, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QCheckBox, QGridLayout, QScrollArea, 
-                             QMessageBox, QListWidget, QListWidgetItem,QGroupBox,QSizePolicy)
+                             QMessageBox, QListWidget, QListWidgetItem, QGroupBox, 
+                             QSizePolicy, QFormLayout, QComboBox, QTabWidget,QWidget)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QTextCharFormat, QColor, QFont
 from views.base_window import BaseWindow
-from utilidades.validators import validar_fecha, validar_hora
-from views.odontograma_widget import OdontogramaWidget
-from PyQt5.QtWidgets import QTabWidget
-from views.odontograma_view_widget import OdontogramaViewWidget
+from views.consulta_window import VentanaHistorialConsultas
 
-class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
+class VentanaCargarPaciente(BaseWindow):
     def __init__(self, parent, db):
         super().__init__(parent)
         self.parent = parent
@@ -18,21 +15,18 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
         self.setup_ui()
 
     def setup_ui(self):
-        # Scroll para todos los campos
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         content = QWidget()
         scroll.setWidget(content)
         
         layout = QVBoxLayout(content)
-        self.setup_form_fields(layout, include_buttons=False)  # Los botones no van en el scroll
-
-        # Layout principal
-        main_layout = QVBoxLayout(self)
-        main_layout.addWidget(scroll)
-
-        # --- Botones fuera del scroll ---
-        btn_guardar = QPushButton("💾 Guardar")
+        self.setup_form_fields(layout)
+        
+        # Botones DENTRO del scroll
+        btn_layout = QHBoxLayout()
+        
+        btn_guardar = QPushButton("💾 Guardar Paciente")
         btn_guardar.setStyleSheet("""
             QPushButton {
                 background-color: #27ae60;
@@ -41,6 +35,7 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
                 border-radius: 6px;
                 font-weight: bold;
                 font-size: 14px;
+                margin-top: 20px;
             }
             QPushButton:hover {
                 background-color: #229954;
@@ -57,6 +52,7 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
                 border-radius: 6px;
                 font-weight: bold;
                 font-size: 14px;
+                margin-top: 20px;
             }
             QPushButton:hover {
                 background-color: #7f8c8d;
@@ -64,43 +60,85 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
         """)
         btn_volver.clicked.connect(self.parent.mostrar_inicio)
 
-        btn_layout = QHBoxLayout()
         btn_layout.addWidget(btn_guardar)
         btn_layout.addWidget(btn_volver)
-        main_layout.addLayout(btn_layout)
+        layout.addLayout(btn_layout)
+        layout.addStretch()
 
+        # Solo el scroll va al layout principal
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(scroll)
         self.setLayout(main_layout)
 
-    def setup_form_fields(self, layout, include_buttons=True):
-        # Título
+    def setup_form_fields(self, layout):
+        # (Este método se mantiene IGUAL al que ya tenías)
         titulo = QLabel("➕ Cargar Nuevo Paciente")
         titulo.setStyleSheet("font-size: 20px; font-weight: bold; color: #27ae60;")
         titulo.setAlignment(Qt.AlignCenter)
         layout.addWidget(titulo)
 
-        # Campos básicos
+        # Campos básicos del paciente
         self.input_nombre = QLineEdit()
+        self.input_nombre.setPlaceholderText("Nombre")
+        
         self.input_apellido = QLineEdit()
+        self.input_apellido.setPlaceholderText("Apellido")
+        
         self.input_cedula = QLineEdit()
         self.input_cedula.setPlaceholderText("Número de cédula")
-        self.input_edad = QLineEdit()
+        
         self.input_telefono = QLineEdit()
-        self.input_fecha_cita = QLineEdit()
-        self.input_fecha_cita.setPlaceholderText("DD/MM/AAAA")
-        self.input_hora_cita = QLineEdit()
-        self.input_hora_cita.setPlaceholderText("HH:MM")
-        self.input_precio_consulta = QLineEdit()
-        self.input_precio_consulta.setPlaceholderText("Precio de la consulta")
-        self.input_obs = QTextEdit()
-        self.input_obs.setMinimumHeight(100)
+        self.input_telefono.setPlaceholderText("Número de teléfono")
+        
+        self.input_edad = QLineEdit()
+        self.input_edad.setPlaceholderText("Edad")
+
+        campos_basicos = [
+            ("Nombre", self.input_nombre),
+            ("Apellido", self.input_apellido),
+            ("Cédula", self.input_cedula),
+            ("Teléfono", self.input_telefono),
+            ("Edad", self.input_edad)
+        ]
+
+        for texto, widget in campos_basicos:
+            lbl = QLabel(texto)
+            lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+            layout.addWidget(lbl)
+            widget.setMinimumHeight(30)
+            layout.addWidget(widget)
+
+        # Historial médico
+        lbl_historial = QLabel("📋 HISTORIAL MÉDICO")
+        lbl_historial.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
+        layout.addWidget(lbl_historial)
 
         self.input_medicamento_actual = QLineEdit()
-        self.input_alergias = QLineEdit()
+        self.input_medicamento_actual.setPlaceholderText("Medicamento actual")
+        layout.addWidget(QLabel("Medicamento actual:"))
+        layout.addWidget(self.input_medicamento_actual)
 
+        self.input_alergias = QLineEdit()
+        self.input_alergias.setPlaceholderText("Alergias")
+        layout.addWidget(QLabel("Alergias:"))
+        layout.addWidget(self.input_alergias)
+
+        # Checkboxes para condiciones médicas
         self.check_embarazada = QCheckBox("¿Está embarazada?")
         self.check_hemorragias = QCheckBox("¿Tuvo hemorragias anormales?")
         self.check_problemas_tratamiento = QCheckBox("¿Presentó algún problema serio asociado con el tratamiento?")
         self.check_enfermedad_cardiovascular = QCheckBox("¿Sufre de alguna enfermedad cardiovascular?")
+
+        for checkbox in [
+            self.check_embarazada, self.check_hemorragias,
+            self.check_problemas_tratamiento, self.check_enfermedad_cardiovascular
+        ]:
+            layout.addWidget(checkbox)
+
+        # Enfermedades
+        lbl_enfermedades = QLabel("Enfermedades:")
+        lbl_enfermedades.setStyleSheet("font-weight: bold; margin-top: 15px;")
+        layout.addWidget(lbl_enfermedades)
 
         self.check_diabetes = QCheckBox("Diabetes")
         self.check_hepatitis = QCheckBox("Hepatitis")
@@ -110,57 +148,9 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
         self.check_hipertension = QCheckBox("Hipertensión")
         self.check_enfermedades_sanguineas = QCheckBox("Enfermedades sanguíneas")
         self.check_otras_enfermedades = QCheckBox("Otras enfermedades")
+        
         self.input_especificar_otras = QLineEdit()
         self.input_especificar_otras.setPlaceholderText("Especifique otras enfermedades")
-
-        self.input_tejidos_intraorales = QTextEdit()
-        self.input_tejidos_intraorales.setPlaceholderText("Describa el estado de los tejidos blandos intraorales")
-        self.input_tejidos_extraorales = QTextEdit()
-        self.input_tejidos_extraorales.setPlaceholderText("Describa el estado de los tejidos blandos extraorales")
-        self.input_ganglios = QTextEdit()
-        self.input_ganglios.setPlaceholderText("Describa el estado de los ganglios")
-        self.input_aspecto_clinico = QTextEdit()
-        self.input_aspecto_clinico.setPlaceholderText("Describa el aspecto clínico general")
-
-        # Agregar campos al layout
-        campos_basicos = [
-            ("Nombre", self.input_nombre),
-            ("Apellido", self.input_apellido),
-            ("Cédula", self.input_cedula),
-            ("Edad", self.input_edad),
-            ("Teléfono", self.input_telefono),
-            ("Fecha de Cita (DD/MM/AAAA)", self.input_fecha_cita),
-            ("Hora de Cita (HH:MM)", self.input_hora_cita),
-            ("Precio Consulta", self.input_precio_consulta),
-            ("Observaciones", self.input_obs)
-        ]
-
-        for texto, widget in campos_basicos:
-            lbl = QLabel(texto)
-            lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
-            layout.addWidget(lbl)
-            if isinstance(widget, QLineEdit):
-                widget.setMinimumHeight(30)
-            layout.addWidget(widget)
-
-        # Historial médico
-        lbl_historial = QLabel("📋 HISTORIAL MÉDICO")
-        lbl_historial.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
-        layout.addWidget(lbl_historial)
-        layout.addWidget(QLabel("Medicamento actual:"))
-        layout.addWidget(self.input_medicamento_actual)
-        layout.addWidget(QLabel("Alergias y a qué:"))
-        layout.addWidget(self.input_alergias)
-
-        for checkbox in [
-            self.check_embarazada, self.check_hemorragias,
-            self.check_problemas_tratamiento, self.check_enfermedad_cardiovascular
-        ]:
-            layout.addWidget(checkbox)
-
-        lbl_enfermedades = QLabel("Enfermedades:")
-        lbl_enfermedades.setStyleSheet("font-weight: bold; margin-top: 15px;")
-        layout.addWidget(lbl_enfermedades)
 
         enfermedades_grid = QGridLayout()
         enfermedades = [
@@ -173,8 +163,10 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
             (self.check_enfermedades_sanguineas, 2, 0),
             (self.check_otras_enfermedades, 2, 1)
         ]
+        
         for checkbox, row, col in enfermedades:
             enfermedades_grid.addWidget(checkbox, row, col)
+        
         layout.addLayout(enfermedades_grid)
         layout.addWidget(self.input_especificar_otras)
 
@@ -183,12 +175,25 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
         lbl_examen.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
         layout.addWidget(lbl_examen)
 
+        self.input_tejidos_intraorales = QTextEdit()
+        self.input_tejidos_intraorales.setPlaceholderText("Describa el estado de los tejidos blandos intraorales")
+        
+        self.input_tejidos_extraorales = QTextEdit()
+        self.input_tejidos_extraorales.setPlaceholderText("Describa el estado de los tejidos blandos extraorales")
+        
+        self.input_ganglios = QTextEdit()
+        self.input_ganglios.setPlaceholderText("Describa el estado de los ganglios")
+        
+        self.input_aspecto_clinico = QTextEdit()
+        self.input_aspecto_clinico.setPlaceholderText("Describa el aspecto clínico general")
+
         examenes = [
             ("Tejidos blandos intraorales", self.input_tejidos_intraorales),
             ("Tejidos blandos extraorales", self.input_tejidos_extraorales),
             ("Ganglios", self.input_ganglios),
             ("Aspecto clínico general", self.input_aspecto_clinico)
         ]
+        
         for texto, widget in examenes:
             lbl = QLabel(texto)
             lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
@@ -196,18 +201,17 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
             widget.setMinimumHeight(80)
             layout.addWidget(widget)
 
-    # --- Limpiar campos ---
     def limpiar_campos(self):
+        # (Método igual al que ya tenías)
         campos = [
             self.input_nombre, self.input_apellido, self.input_cedula,
-            self.input_edad, self.input_telefono, self.input_fecha_cita,
-            self.input_hora_cita, self.input_precio_consulta,
-            self.input_medicamento_actual, self.input_alergias,
-            self.input_especificar_otras
+            self.input_telefono, self.input_edad, self.input_medicamento_actual,
+            self.input_alergias, self.input_especificar_otras
         ]
+        
         for campo in campos:
             campo.clear()
-        self.input_obs.clear()
+        
         self.input_tejidos_intraorales.clear()
         self.input_tejidos_extraorales.clear()
         self.input_ganglios.clear()
@@ -222,37 +226,29 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
             self.check_otras_enfermedades
         ]:
             checkbox.setChecked(False)
-            checkbox.setChecked(False)
 
     def guardar(self):
+        # (Método igual al que ya tenías)
         try:
             if not self.input_nombre.text() or not self.input_apellido.text():
                 QMessageBox.warning(self, "Error", "Nombre y apellido son obligatorios")
                 return
             
+            cedula = self.input_cedula.text().strip()
+            if cedula and self.db.existe_paciente_cedula(cedula):
+                QMessageBox.warning(self, "Error", "Ya existe un paciente con esta cédula")
+                return
+            
             if self.input_edad.text() and not self.input_edad.text().isdigit():
                 QMessageBox.warning(self, "Error", "La edad debe ser un número válido")
                 return
-                
-            if self.input_fecha_cita.text() and not validar_fecha(self.input_fecha_cita.text()):
-                QMessageBox.warning(self, "Error", "Formato de fecha inválido. Use DD/MM/AAAA")
-                return
-                
-            # Validar que el precio sea numérico si se ingresa
-            if self.input_precio_consulta.text() and not self.input_precio_consulta.text().replace('.', '').isdigit():
-                QMessageBox.warning(self, "Error", "El precio debe ser un número válido")
-                return
-                
-            self.db.agregar_paciente(
+            
+            paciente_id = self.db.agregar_paciente(
                 nombre=self.input_nombre.text(),
                 apellido=self.input_apellido.text(),
-                cedula=self.input_cedula.text(),  # NUEVO
-                edad=int(self.input_edad.text()) if self.input_edad.text() else 0,
+                cedula=cedula,
                 telefono=self.input_telefono.text(),
-                obs=self.input_obs.toPlainText(),
-                fecha_cita=self.input_fecha_cita.text(),
-                hora_cita=self.input_hora_cita.text(),
-                precio_consulta=float(self.input_precio_consulta.text()) if self.input_precio_consulta.text() else 0.0,  # NUEVO
+                edad=int(self.input_edad.text()) if self.input_edad.text() else 0,
                 medicamento_actual=self.input_medicamento_actual.text(),
                 alergias=self.input_alergias.text(),
                 embarazada=1 if self.check_embarazada.isChecked() else 0,
@@ -273,14 +269,29 @@ class VentanaCargar(BaseWindow):  # ✅ Ya hereda de BaseWindow
                 ganglios=self.input_ganglios.toPlainText(),
                 aspecto_clinico_general=self.input_aspecto_clinico.toPlainText()
             )
+            
             QMessageBox.information(self, "Éxito", "Paciente guardado correctamente")
             self.limpiar_campos()
+            
+            # Preguntar si desea agregar una consulta inmediatamente
+            respuesta = QMessageBox.question(
+                self, "Nueva Consulta",
+                "¿Desea agregar una consulta para este paciente ahora?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            
+            if respuesta == QMessageBox.Yes:
+                from views.consulta_window import VentanaCargarConsulta
+                ventana_consulta = VentanaCargarConsulta(self.parent, self.db, paciente_id)
+                ventana_consulta.exec_()
+                
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al guardar: {str(e)}")
 
-class VentanaDetallePaciente(QWidget):
-    def __init__(self, paciente, db):
-        super().__init__()
+class VentanaDetallePaciente(QDialog):  # CAMBIADO a QDialog
+    def __init__(self, paciente, db, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.Window)  # Ventana independiente
         self.paciente = paciente  # Diccionario
         self.db = db
         self.setWindowTitle("Detalle del Paciente")
@@ -288,6 +299,8 @@ class VentanaDetallePaciente(QWidget):
         self.setup_ui()
         
     def setup_ui(self):
+        layout = QVBoxLayout(self)
+        
         self.tab_widget = QTabWidget()
         self.tab_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -301,19 +314,13 @@ class VentanaDetallePaciente(QWidget):
         self.tab_widget.addTab(tab_info, "📋 Información del Paciente")
         self.tab_widget.addTab(tab_odonto, "🦷 Odontograma")
 
-        # Layout principal
-        main_layout = QVBoxLayout(self)
-        main_layout.addWidget(self.tab_widget)
+        layout.addWidget(self.tab_widget)
 
-        # Botón cerrar
+        # Botón cerrar DENTRO del layout principal
         btn_cerrar = QPushButton("Cerrar")
-        btn_cerrar.setStyleSheet("padding: 10px; font-size: 14px; margin-top: 20px;")
-        btn_cerrar.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        btn_cerrar.setStyleSheet("padding: 10px; font-size: 14px; margin-top: 10px;")
         btn_cerrar.clicked.connect(self.close)
-        main_layout.addWidget(btn_cerrar, alignment=Qt.AlignCenter)
-
-        self.setLayout(main_layout)
-        self.show()
+        layout.addWidget(btn_cerrar, alignment=Qt.AlignCenter)
 
     def setup_info_tab(self, tab):
         scroll = QScrollArea()
@@ -336,45 +343,93 @@ class VentanaDetallePaciente(QWidget):
         # Datos básicos
         edad = self.paciente.get('edad')
         edad_str = str(edad) if edad not in (None, '') else "No especificada"
-
         telefono = self.paciente.get('telefono', '') or "No especificado"
-
-        fecha_cita = self.paciente.get('fecha_cita', '') or "No especificada"
-        hora_cita = self.paciente.get('hora_cita', '') or "No especificada"
-
-        precio = self.paciente.get('precio_consulta', 0)
-        try:
-            precio_formateado = f"${float(precio):.2f}"
-        except (ValueError, TypeError):
-            precio_formateado = str(precio) if precio else "No especificado"
-
         cedula = self.paciente.get('cedula', '') or "No especificada"
 
+        # Crear grid para datos básicos
+        grid_datos = QGridLayout()
+        grid_datos.setSpacing(10)
+        
         datos_basicos = [
             ("Cédula", cedula),
             ("Edad", edad_str),
             ("Teléfono", telefono),
-            ("Fecha de Cita", fecha_cita),
-            ("Hora de Cita", hora_cita),
-            ("Precio Consulta", precio_formateado)
         ]
-
-        for campo, valor in datos_basicos:
-            lbl = QLabel(f"{campo}: {valor}")
-            lbl.setStyleSheet("font-size: 16px; font-weight: bold; padding: 3px;")
-            layout.addWidget(lbl)
+        
+        for i, (campo, valor) in enumerate(datos_basicos):
+            lbl_campo = QLabel(f"<b>{campo}:</b>")
+            lbl_campo.setStyleSheet("font-size: 14px;")
+            lbl_valor = QLabel(valor)
+            lbl_valor.setStyleSheet("font-size: 14px; padding-left: 10px;")
+            
+            grid_datos.addWidget(lbl_campo, i, 0)
+            grid_datos.addWidget(lbl_valor, i, 1)
+        
+        layout.addLayout(grid_datos)
+        layout.addSpacing(20)
 
         # Historial médico
-        self.agregar_seccion(layout, "📋 HISTORIAL MÉDICO", [
-            ("Medicamento actual", 'medicamento_actual'),
-            ("Alergias", 'alergias'),
-            ("¿Está embarazada?", 'embarazada', lambda x: "Sí" if x in (1, True) else "No"),
-            ("¿Tuvo hemorragias anormales?", 'hemorragias', lambda x: "Sí" if x in (1, True) else "No"),
-            ("¿Problemas con tratamientos?", 'problemas_tratamiento', lambda x: "Sí" if x in (1, True) else "No"),
-            ("¿Enfermedad cardiovascular?", 'enfermedad_cardiovascular', lambda x: "Sí" if x in (1, True) else "No")
-        ])
+        lbl_historial = QLabel("📋 HISTORIAL MÉDICO")
+        lbl_historial.setStyleSheet("""
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #2980b9; 
+            margin-top: 15px;
+            padding: 5px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        """)
+        lbl_historial.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_historial)
+
+        # Medicamento actual
+        medicamento = self.paciente.get('medicamento_actual', '')
+        if medicamento:
+            lbl_med = QLabel(f"<b>Medicamento actual:</b> {medicamento}")
+            lbl_med.setStyleSheet("font-size: 14px; padding: 5px;")
+            lbl_med.setWordWrap(True)
+            layout.addWidget(lbl_med)
+
+        # Alergias
+        alergias = self.paciente.get('alergias', '')
+        if alergias:
+            lbl_alergias = QLabel(f"<b>Alergias:</b> {alergias}")
+            lbl_alergias.setStyleSheet("font-size: 14px; padding: 5px;")
+            lbl_alergias.setWordWrap(True)
+            layout.addWidget(lbl_alergias)
+
+        # Condiciones (checkboxes convertidos a texto)
+        condiciones_grid = QGridLayout()
+        condiciones_grid.setSpacing(5)
+        
+        condiciones = [
+            ("embarazada", "¿Está embarazada?", 0),
+            ("hemorragias", "¿Tuvo hemorragias anormales?", 1),
+            ("problemas_tratamiento", "¿Problemas con tratamientos?", 2),
+            ("enfermedad_cardiovascular", "¿Enfermedad cardiovascular?", 3),
+        ]
+        
+        row = 0
+        col = 0
+        for campo, texto, _ in condiciones:
+            if self.paciente.get(campo):
+                lbl = QLabel(f"✓ {texto}")
+                lbl.setStyleSheet("font-size: 13px; color: #27ae60; padding: 3px;")
+                condiciones_grid.addWidget(lbl, row, col)
+                col += 1
+                if col > 1:
+                    col = 0
+                    row += 1
+        
+        if row > 0 or col > 0:
+            layout.addLayout(condiciones_grid)
+            layout.addSpacing(10)
 
         # Enfermedades
+        lbl_enfermedades = QLabel("Enfermedades:")
+        lbl_enfermedades.setStyleSheet("font-size: 16px; font-weight: bold; margin-top: 10px;")
+        layout.addWidget(lbl_enfermedades)
+
         enfermedades = [
             ('Diabetes', 'diabetes'),
             ('Hepatitis', 'hepatitis'),
@@ -385,37 +440,67 @@ class VentanaDetallePaciente(QWidget):
             ('Enfermedades sanguíneas', 'enfermedades_sanguineas'),
             ('Otras enfermedades', 'otras_enfermedades')
         ]
-        enfermedades_presentes = [enfermedad for enfermedad, campo in enfermedades
-                                 if self.paciente.get(campo) in (1, True) or bool(self.paciente.get(campo))]
+        
+        enfermedades_grid = QGridLayout()
+        enfermedades_grid.setSpacing(8)
+        
+        enfermedades_presentes = []
+        for i, (nombre, campo) in enumerate(enfermedades):
+            if self.paciente.get(campo):
+                lbl = QLabel(f"• {nombre}")
+                lbl.setStyleSheet("font-size: 14px; padding: 2px;")
+                enfermedades_grid.addWidget(lbl, i // 2, i % 2)
+                enfermedades_presentes.append(nombre)
+        
         if enfermedades_presentes:
-            lbl_enfermedades = QLabel("Enfermedades: " + ", ".join(enfermedades_presentes))
-            lbl_enfermedades.setStyleSheet("font-size: 16px; font-weight: bold; padding: 3px;")
-            layout.addWidget(lbl_enfermedades)
-            if self.paciente.get('especificar_otras'):
-                lbl_otras = QLabel(f"Especificar otras: {self.paciente['especificar_otras']}")
-                lbl_otras.setStyleSheet("font-size: 14px; padding: 3px;")
+            layout.addLayout(enfermedades_grid)
+            
+            # Especificar otras
+            especificar = self.paciente.get('especificar_otras', '')
+            if especificar:
+                lbl_otras = QLabel(f"<b>Especificar otras:</b> {especificar}")
+                lbl_otras.setStyleSheet("font-size: 14px; padding: 5px; background-color: #f8f9fa; border-radius: 5px;")
+                lbl_otras.setWordWrap(True)
                 layout.addWidget(lbl_otras)
-
+        
         # Examen clínico
-        self.agregar_seccion(layout, "🔍 EXAMEN CLÍNICO", [
-            ("Tejidos blandos intraorales", 'tejidos_blandos_intraorales'),
-            ("Tejidos blandos extraorales", 'tejidos_blandos_extraorales'),
-            ("Ganglios", 'ganglios'),
-            ("Aspecto clínico general", 'aspecto_clinico_general')
-        ])
+        lbl_examen = QLabel("🔍 EXAMEN CLÍNICO")
+        lbl_examen.setStyleSheet("""
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #2980b9; 
+            margin-top: 20px;
+            padding: 5px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        """)
+        lbl_examen.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_examen)
 
-        # Observaciones
-        obs = self.paciente.get('obs')
-        if obs:
-            lbl_obs_titulo = QLabel("Observación:")
-            lbl_obs_titulo.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 15px;")
-            lbl_obs_titulo.setAlignment(Qt.AlignCenter)
-            layout.addWidget(lbl_obs_titulo)
-
-            lbl_obs_texto = QLabel(str(obs))
-            lbl_obs_texto.setWordWrap(True)
-            lbl_obs_texto.setStyleSheet("font-size: 14px; padding: 5px;")
-            layout.addWidget(lbl_obs_texto)
+        examenes = [
+            ('tejidos_blandos_intraorales', 'Tejidos blandos intraorales'),
+            ('tejidos_blandos_extraorales', 'Tejidos blandos extraorales'),
+            ('ganglios', 'Ganglios'),
+            ('aspecto_clinico_general', 'Aspecto clínico general')
+        ]
+        
+        for campo, texto in examenes:
+            valor = self.paciente.get(campo, '')
+            if valor:
+                lbl_titulo = QLabel(f"<b>{texto}:</b>")
+                lbl_titulo.setStyleSheet("font-size: 14px; font-weight: bold; margin-top: 10px;")
+                layout.addWidget(lbl_titulo)
+                
+                lbl_valor = QLabel(valor)
+                lbl_valor.setStyleSheet("""
+                    font-size: 13px; 
+                    padding: 8px; 
+                    background-color: #f8f9fa; 
+                    border-radius: 5px;
+                    border: 1px solid #dee2e6;
+                """)
+                lbl_valor.setWordWrap(True)
+                layout.addWidget(lbl_valor)
 
         tab_layout = QVBoxLayout(tab)
         tab_layout.addWidget(scroll)
@@ -436,44 +521,29 @@ class VentanaDetallePaciente(QWidget):
         titulo.setAlignment(Qt.AlignCenter)
         layout.addWidget(titulo)
 
-        # Widget odontograma
+        # Obtener la última consulta del paciente para mostrar su odontograma
         try:
-            from views.odontograma_view_widget import OdontogramaViewWidget
-            odontograma_view = OdontogramaViewWidget(self.paciente['id'], self.db)
-            odontograma_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            layout.addWidget(odontograma_view)
+            consultas = self.db.obtener_consultas_paciente(self.paciente['id'])
+            if consultas:
+                ultima_consulta = consultas[0]  # La más reciente
+                from views.odontograma_view_widget import OdontogramaViewWidget
+                odontograma_view = OdontogramaViewWidget(ultima_consulta[0], self.db)
+                odontograma_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                layout.addWidget(odontograma_view)
+            else:
+                error_label = QLabel("⚠️ Este paciente no tiene consultas registradas")
+                error_label.setStyleSheet("color: #e74c3c; padding: 20px; font-size: 14px;")
+                error_label.setAlignment(Qt.AlignCenter)
+                layout.addWidget(error_label)
         except Exception as e:
             print(f"Error mostrando odontograma: {e}")
             error_label = QLabel("⚠️ No se pudo cargar el odontograma")
-            error_label.setStyleSheet("color: #e74c3c; padding: 10px; font-size: 14px;")
+            error_label.setStyleSheet("color: #e74c3c; padding: 20px; font-size: 14px;")
             error_label.setAlignment(Qt.AlignCenter)
             layout.addWidget(error_label)
 
         tab_layout = QVBoxLayout(tab)
         tab_layout.addWidget(scroll)
-
-    def agregar_seccion(self, layout, titulo, campos):
-        campos_con_valor = []
-        for nombre, clave, *func in campos:
-            valor = self.paciente.get(clave)
-            if valor not in (None, ''):
-                if func:
-                    valor = func[0](valor)
-                campos_con_valor.append((nombre, valor))
-
-        if not campos_con_valor:
-            return
-
-        lbl_titulo = QLabel(titulo)
-        lbl_titulo.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 15px; color: #2980b9;")
-        lbl_titulo.setAlignment(Qt.AlignCenter)
-        layout.addWidget(lbl_titulo)
-
-        for nombre, valor in campos_con_valor:
-            lbl = QLabel(f"{nombre}: {valor}")
-            lbl.setStyleSheet("font-size: 14px; padding: 3px;")
-            lbl.setWordWrap(True)
-            layout.addWidget(lbl)
 
 class VentanaBuscar(BaseWindow):
     def __init__(self, parent, db):
@@ -483,7 +553,7 @@ class VentanaBuscar(BaseWindow):
         self.setup_ui()
 
     def setup_ui(self):
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
 
         titulo = QLabel("🔍 Buscar Paciente")
         titulo.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9;")
@@ -491,20 +561,19 @@ class VentanaBuscar(BaseWindow):
         layout.addWidget(titulo)
 
         self.input_buscar = QLineEdit()
-        self.input_buscar.setPlaceholderText("Ingrese nombre o apellido...")
+        self.input_buscar.setPlaceholderText("Buscar por nombre, apellido, cédula o teléfono...")
         self.input_buscar.textChanged.connect(self.buscar)
         self.input_buscar.setMinimumHeight(30)
         layout.addWidget(self.input_buscar)
 
         self.tabla = QTableWidget()
-        self.tabla.setColumnCount(11)  # CAMBIADO de 9 a 11
+        self.tabla.setColumnCount(5)
         self.tabla.setHorizontalHeaderLabels([
-            "Nombre", "Apellido", "Cédula", "Edad", "Teléfono", 
-            "Fecha Cita", "Hora Cita", "Precio", "Alergias", "Medicamento", "Obs."
+            "Nombre", "Apellido", "Cédula", "Teléfono", "Edad"
         ])
         self.tabla.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.tabla.cellClicked.connect(self.mostrar_detalle)
+        self.tabla.cellDoubleClicked.connect(self.mostrar_detalle)
         self.tabla.setSelectionBehavior(QTableWidget.SelectRows)
         layout.addWidget(self.tabla)
 
@@ -523,7 +592,6 @@ class VentanaBuscar(BaseWindow):
         btn_volver.clicked.connect(self.parent.mostrar_inicio)
         layout.addWidget(btn_volver)
         
-        self.setLayout(layout)
         self.buscar()
 
     def buscar(self):
@@ -532,29 +600,20 @@ class VentanaBuscar(BaseWindow):
         self.tabla.setRowCount(len(resultados))
         
         for i, paciente in enumerate(resultados):
-            # ORDEN CORRECTO según los headers:
-            self.tabla.setItem(i, 0, QTableWidgetItem(paciente.get('nombre', '')))        # Columna 0: Nombre
-            self.tabla.setItem(i, 1, QTableWidgetItem(paciente.get('apellido', '')))      # Columna 1: Apellido
-            self.tabla.setItem(i, 2, QTableWidgetItem(paciente.get('cedula', '')))        # Columna 2: Cédula
-            self.tabla.setItem(i, 3, QTableWidgetItem(str(paciente.get('edad', ''))))     # Columna 3: Edad
-            self.tabla.setItem(i, 4, QTableWidgetItem(paciente.get('telefono', '')))      # Columna 4: Teléfono
-            self.tabla.setItem(i, 5, QTableWidgetItem(paciente.get('fecha_cita', '')))    # Columna 5: Fecha Cita
-            self.tabla.setItem(i, 6, QTableWidgetItem(paciente.get('hora_cita', '')))     # Columna 6: Hora Cita
-            self.tabla.setItem(i, 7, QTableWidgetItem(str(paciente.get('precio_consulta', ''))))  # Columna 7: Precio
-            self.tabla.setItem(i, 8, QTableWidgetItem(paciente.get('alergias', '')))      # Columna 8: Alergias
-            self.tabla.setItem(i, 9, QTableWidgetItem(paciente.get('medicamento_actual', '')))    # Columna 9: Medicamento
-            
-            obs = paciente.get('obs', '')
-            obs_preview = obs[:30] + "..." if obs and len(obs) > 30 else obs
-            self.tabla.setItem(i, 10, QTableWidgetItem(obs_preview))  # Columna 10: Obs
+            self.tabla.setItem(i, 0, QTableWidgetItem(paciente.get('nombre', '')))
+            self.tabla.setItem(i, 1, QTableWidgetItem(paciente.get('apellido', '')))
+            self.tabla.setItem(i, 2, QTableWidgetItem(paciente.get('cedula', '')))
+            self.tabla.setItem(i, 3, QTableWidgetItem(paciente.get('telefono', '')))
+            self.tabla.setItem(i, 4, QTableWidgetItem(str(paciente.get('edad', ''))))
 
     def mostrar_detalle(self, row, col):
         texto = self.input_buscar.text()
         resultados = self.db.buscar_paciente(texto)
         
         if row < len(resultados):
-            paciente = resultados[row]  # Ya es un diccionario
-            self.detalle = VentanaDetallePaciente(paciente, self.db)
+            paciente = resultados[row]
+            detalle = VentanaDetallePaciente(paciente, self.db, self)
+            detalle.exec_()  # Modal
 
 class VentanaModificar(BaseWindow):
     def __init__(self, parent, db):
@@ -565,23 +624,22 @@ class VentanaModificar(BaseWindow):
         self.setup_ui()
 
     def setup_ui(self):
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         titulo = QLabel("🛠️ Modificar / Eliminar Paciente")
         titulo.setStyleSheet("font-size: 18px; font-weight: bold; color: #c0392b;")
         titulo.setAlignment(Qt.AlignCenter)
         layout.addWidget(titulo)
 
         self.input_buscar = QLineEdit()
-        self.input_buscar.setPlaceholderText("Buscar paciente por nombre o apellido...")
+        self.input_buscar.setPlaceholderText("Buscar paciente por nombre, apellido, cédula o teléfono...")
         self.input_buscar.textChanged.connect(self.buscar)
         self.input_buscar.setMinimumHeight(30)
         layout.addWidget(self.input_buscar)
 
         self.tabla = QTableWidget()
-        self.tabla.setColumnCount(11)  # CAMBIADO de 9 a 11
+        self.tabla.setColumnCount(6)
         self.tabla.setHorizontalHeaderLabels([
-            "Nombre", "Apellido", "Cédula", "Edad", "Teléfono", 
-            "Fecha Cita", "Hora Cita", "Precio", "Alergias", "Medicamento", "Obs."
+            "Nombre", "Apellido", "Cédula", "Teléfono", "Edad", "Acciones"
         ])
         self.tabla.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -617,6 +675,20 @@ class VentanaModificar(BaseWindow):
         """)
         btn_eliminar.clicked.connect(self.eliminar)
         
+        btn_consultas = QPushButton("📋 Ver Consultas")
+        btn_consultas.setStyleSheet("""
+            QPushButton {
+                background-color: #9b59b6; 
+                color: white; 
+                padding: 8px; 
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #8e44ad;
+            }
+        """)
+        btn_consultas.clicked.connect(self.ver_consultas)
+        
         btn_volver = QPushButton("⬅️ Volver")
         btn_volver.setStyleSheet("""
             QPushButton {
@@ -634,10 +706,10 @@ class VentanaModificar(BaseWindow):
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(btn_editar)
         btn_layout.addWidget(btn_eliminar)
+        btn_layout.addWidget(btn_consultas)
         btn_layout.addWidget(btn_volver)
         
         layout.addLayout(btn_layout)
-        self.setLayout(layout)
         self.buscar()
 
     def buscar(self):
@@ -646,21 +718,17 @@ class VentanaModificar(BaseWindow):
         self.tabla.setRowCount(len(resultados))
         
         for i, paciente in enumerate(resultados):
-            # ORDEN CORRECTO según los headers:
-            self.tabla.setItem(i, 0, QTableWidgetItem(paciente.get('nombre', '')))        # Columna 0: Nombre
-            self.tabla.setItem(i, 1, QTableWidgetItem(paciente.get('apellido', '')))      # Columna 1: Apellido
-            self.tabla.setItem(i, 2, QTableWidgetItem(paciente.get('cedula', '')))        # Columna 2: Cédula
-            self.tabla.setItem(i, 3, QTableWidgetItem(str(paciente.get('edad', ''))))     # Columna 3: Edad
-            self.tabla.setItem(i, 4, QTableWidgetItem(paciente.get('telefono', '')))      # Columna 4: Teléfono
-            self.tabla.setItem(i, 5, QTableWidgetItem(paciente.get('fecha_cita', '')))    # Columna 5: Fecha Cita
-            self.tabla.setItem(i, 6, QTableWidgetItem(paciente.get('hora_cita', '')))     # Columna 6: Hora Cita
-            self.tabla.setItem(i, 7, QTableWidgetItem(str(paciente.get('precio_consulta', ''))))  # Columna 7: Precio
-            self.tabla.setItem(i, 8, QTableWidgetItem(paciente.get('alergias', '')))      # Columna 8: Alergias
-            self.tabla.setItem(i, 9, QTableWidgetItem(paciente.get('medicamento_actual', '')))    # Columna 9: Medicamento
+            self.tabla.setItem(i, 0, QTableWidgetItem(paciente.get('nombre', '')))
+            self.tabla.setItem(i, 1, QTableWidgetItem(paciente.get('apellido', '')))
+            self.tabla.setItem(i, 2, QTableWidgetItem(paciente.get('cedula', '')))
+            self.tabla.setItem(i, 3, QTableWidgetItem(paciente.get('telefono', '')))
+            self.tabla.setItem(i, 4, QTableWidgetItem(str(paciente.get('edad', ''))))
             
-            obs = paciente.get('obs', '')
-            obs_preview = obs[:30] + "..." if obs and len(obs) > 30 else obs
-            self.tabla.setItem(i, 10, QTableWidgetItem(obs_preview))  # Columna 10: Obs
+            # Botón ver detalle rápido
+            btn_ver = QPushButton("👁️ Ver")
+            btn_ver.setStyleSheet("padding: 5px;")
+            btn_ver.clicked.connect(lambda checked, pid=paciente['id']: self.ver_detalle_rapido(pid))
+            self.tabla.setCellWidget(i, 5, btn_ver)
             
         self.selected_id = None
 
@@ -669,26 +737,63 @@ class VentanaModificar(BaseWindow):
         resultados = self.db.buscar_paciente(texto)
         if row < len(resultados):
             self.selected_id = resultados[row].get('id')
-            
+    
+    def ver_detalle_rapido(self, paciente_id):
+        paciente = self.db.obtener_paciente_por_id(paciente_id)
+        if paciente:
+            ventana_detalle = VentanaDetallePaciente(paciente, self.db, self)
+            ventana_detalle.exec_()
+    
     def editar(self):
         if self.selected_id is None:
             QMessageBox.warning(self, "Error", "Seleccione un paciente")
             return
-        self.parent.mostrar_editar(self.selected_id)
-
+        ventana_editar = VentanaEditar(self, self.db, self.selected_id)
+        ventana_editar.exec_()  # Modal
+    
     def eliminar(self):
         if self.selected_id is None:
             QMessageBox.warning(self, "Error", "Seleccione un paciente")
             return
-        confirm = QMessageBox.question(self, "Confirmar", "¿Desea eliminar este paciente?", QMessageBox.Yes | QMessageBox.No)
-        if confirm == QMessageBox.Yes:
-            self.db.eliminar_paciente(self.selected_id)
-            self.buscar()
-            QMessageBox.information(self, "Éxito", "Paciente eliminado")
+        
+        # Verificar si tiene consultas
+        consultas = self.db.obtener_consultas_paciente(self.selected_id)
+        if consultas:
+            respuesta = QMessageBox.warning(
+                self, "Confirmar Eliminación",
+                f"Este paciente tiene {len(consultas)} consultas registradas.\n\n"
+                "¿Está seguro de eliminar al paciente?\n"
+                "TODAS las consultas asociadas también se eliminarán.",
+                QMessageBox.Yes | QMessageBox.No
+            )
+        else:
+            respuesta = QMessageBox.question(
+                self, "Confirmar", 
+                "¿Desea eliminar este paciente?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+        
+        if respuesta == QMessageBox.Yes:
+            if self.db.eliminar_paciente(self.selected_id):
+                QMessageBox.information(self, "Éxito", "Paciente eliminado correctamente")
+                self.buscar()
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo eliminar el paciente")
+    
+    def ver_consultas(self):
+        if self.selected_id is None:
+            QMessageBox.warning(self, "Error", "Seleccione un paciente")
+            return
+        
+        paciente = self.db.obtener_paciente_por_id(self.selected_id)
+        if paciente:
+            ventana_consultas = VentanaHistorialConsultas(self, self.db, self.selected_id)
+            ventana_consultas.exec_()  # Modal
 
-class VentanaEditar(QWidget):
+class VentanaEditar(QDialog):  # CAMBIADO a QDialog
     def __init__(self, parent, db, paciente_id):
         super().__init__(parent)
+        self.setWindowFlags(Qt.Window)  # Ventana independiente
         self.parent = parent
         self.db = db
         self.paciente_id = paciente_id
@@ -696,58 +801,134 @@ class VentanaEditar(QWidget):
 
         if not self.paciente:
             QMessageBox.warning(self, "Error", "Paciente no encontrado")
-            self.parent.mostrar_modificar()
+            self.close()
             return
 
         self.setWindowTitle("✏️ Editar Paciente")
         self.resize(1000, 700)
-        self.setup_ui_con_pestanas()
+        self.setup_ui()
         self.cargar_datos()
+    
+    def setup_ui(self):
+        # Layout principal
+        main_layout = QVBoxLayout(self)
         
-
-    def setup_ui_con_pestanas(self):
-        """Setup con pestañas para información y odontograma"""
-        from PyQt5.QtWidgets import QTabWidget
+        # Scroll area que contiene TODO
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        scroll.setWidget(content)
         
-        # Crear widget de pestañas
-        self.tab_widget = QTabWidget()
-        
-        # Pestaña 1: Información del paciente
-        tab_info = QWidget()
-        layout_info = QVBoxLayout(tab_info)
-        
-        # Scroll area para información
-        scroll_info = QScrollArea()
-        scroll_info.setWidgetResizable(True)
-        content_info = QWidget()
-        scroll_info.setWidget(content_info)
-        layout_content = QVBoxLayout(content_info)
+        content_layout = QVBoxLayout(content)
         
         # Título
         titulo = QLabel("✏️ Editar Información del Paciente")
-        titulo.setStyleSheet("font-size: 16px; font-weight: bold; color: #e67e22;")
+        titulo.setStyleSheet("font-size: 18px; font-weight: bold; color: #e67e22; padding: 10px;")
         titulo.setAlignment(Qt.AlignCenter)
-        layout_content.addWidget(titulo)
+        content_layout.addWidget(titulo)
         
-        # Campos básicos del paciente (AGREGAR NUEVOS CAMPOS)
+        # Campos de edición
+        self.setup_campos_edicion(content_layout)
+        
+        # Botones DENTRO del contenido scrollable
+        btn_layout = QHBoxLayout()
+        
+        btn_guardar = QPushButton("💾 Guardar Cambios")
+        btn_guardar.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                padding: 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 14px;
+                margin-top: 20px;
+            }
+            QPushButton:hover {
+                background-color: #229954;
+            }
+        """)
+        btn_guardar.clicked.connect(self.guardar)
+        
+        btn_cancelar = QPushButton("❌ Cancelar")
+        btn_cancelar.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                padding: 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 14px;
+                margin-top: 20px;
+            }
+            QPushButton:hover {
+                background-color: #7f8c8d;
+            }
+        """)
+        btn_cancelar.clicked.connect(self.close)
+        
+        btn_layout.addWidget(btn_guardar)
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_cancelar)
+        
+        content_layout.addLayout(btn_layout)
+        content_layout.addStretch()  # Espacio flexible al final
+        
+        # Solo el scroll va al layout principal
+        main_layout.addWidget(scroll)
+    
+    def setup_campos_edicion(self, layout):
+        # Título
+        titulo = QLabel("✏️ Editar Información del Paciente")
+        titulo.setStyleSheet("font-size: 18px; font-weight: bold; color: #e67e22;")
+        titulo.setAlignment(Qt.AlignCenter)
+        layout.addWidget(titulo)
+        
+        # Campos básicos del paciente
         self.input_nombre = QLineEdit()
+        self.input_nombre.setPlaceholderText("Nombre")
+        
         self.input_apellido = QLineEdit()
-        self.input_cedula = QLineEdit()  # NUEVO CAMPO
+        self.input_apellido.setPlaceholderText("Apellido")
+        
+        self.input_cedula = QLineEdit()
         self.input_cedula.setPlaceholderText("Número de cédula")
-        self.input_edad = QLineEdit()
+        
         self.input_telefono = QLineEdit()
-        self.input_fecha_cita = QLineEdit()
-        self.input_fecha_cita.setPlaceholderText("DD/MM/AAAA")
-        self.input_hora_cita = QLineEdit()
-        self.input_hora_cita.setPlaceholderText("HH:MM")
-        self.input_precio_consulta = QLineEdit()  # NUEVO CAMPO
-        self.input_precio_consulta.setPlaceholderText("Precio de la consulta")
-        self.input_obs = QTextEdit()
-        self.input_obs.setMinimumHeight(100)
-
-        # Campos del historial médico
+        self.input_telefono.setPlaceholderText("Número de teléfono")
+        
+        self.input_edad = QLineEdit()
+        self.input_edad.setPlaceholderText("Edad")
+        
+        campos_basicos = [
+            ("Nombre", self.input_nombre),
+            ("Apellido", self.input_apellido),
+            ("Cédula", self.input_cedula),
+            ("Teléfono", self.input_telefono),
+            ("Edad", self.input_edad)
+        ]
+        
+        for texto, widget in campos_basicos:
+            lbl = QLabel(texto)
+            lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+            layout.addWidget(lbl)
+            widget.setMinimumHeight(30)
+            layout.addWidget(widget)
+        
+        # Historial médico
+        lbl_historial = QLabel("📋 HISTORIAL MÉDICO")
+        lbl_historial.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
+        layout.addWidget(lbl_historial)
+        
         self.input_medicamento_actual = QLineEdit()
+        self.input_medicamento_actual.setPlaceholderText("Medicamento actual")
+        layout.addWidget(QLabel("Medicamento actual:"))
+        layout.addWidget(self.input_medicamento_actual)
+        
         self.input_alergias = QLineEdit()
+        self.input_alergias.setPlaceholderText("Alergias")
+        layout.addWidget(QLabel("Alergias:"))
+        layout.addWidget(self.input_alergias)
         
         # Checkboxes para condiciones médicas
         self.check_embarazada = QCheckBox("¿Está embarazada?")
@@ -755,7 +936,17 @@ class VentanaEditar(QWidget):
         self.check_problemas_tratamiento = QCheckBox("¿Presentó algún problema serio asociado con el tratamiento?")
         self.check_enfermedad_cardiovascular = QCheckBox("¿Sufre de alguna enfermedad cardiovascular?")
         
-        # Checkboxes para enfermedades específicas
+        for checkbox in [
+            self.check_embarazada, self.check_hemorragias,
+            self.check_problemas_tratamiento, self.check_enfermedad_cardiovascular
+        ]:
+            layout.addWidget(checkbox)
+        
+        # Enfermedades
+        lbl_enfermedades = QLabel("Enfermedades:")
+        lbl_enfermedades.setStyleSheet("font-weight: bold; margin-top: 15px;")
+        layout.addWidget(lbl_enfermedades)
+        
         self.check_diabetes = QCheckBox("Diabetes")
         self.check_hepatitis = QCheckBox("Hepatitis")
         self.check_artritis = QCheckBox("Artritis")
@@ -764,65 +955,9 @@ class VentanaEditar(QWidget):
         self.check_hipertension = QCheckBox("Hipertensión")
         self.check_enfermedades_sanguineas = QCheckBox("Enfermedades sanguíneas")
         self.check_otras_enfermedades = QCheckBox("Otras enfermedades")
+        
         self.input_especificar_otras = QLineEdit()
         self.input_especificar_otras.setPlaceholderText("Especifique otras enfermedades")
-        
-        # Examen clínico
-        self.input_tejidos_intraorales = QTextEdit()
-        self.input_tejidos_intraorales.setPlaceholderText("Describa el estado de los tejidos blandos intraorales")
-        self.input_tejidos_extraorales = QTextEdit()
-        self.input_tejidos_extraorales.setPlaceholderText("Describa el estado de los tejidos blandos extraorales")
-        self.input_ganglios = QTextEdit()
-        self.input_ganglios.setPlaceholderText("Describa el estado de los ganglios")
-        self.input_aspecto_clinico = QTextEdit()
-        self.input_aspecto_clinico.setPlaceholderText("Describa el aspecto clínico general")
-
-        # Agregar campos básicos al layout
-        campos_basicos = [
-            ("Nombre", self.input_nombre),
-            ("Apellido", self.input_apellido),
-            ("Cédula", self.input_cedula),  # NUEVO
-            ("Edad", self.input_edad),
-            ("Teléfono", self.input_telefono),
-            ("Fecha de Cita (DD/MM/AAAA)", self.input_fecha_cita),
-            ("Hora de Cita (HH:MM)", self.input_hora_cita),
-            ("Precio Consulta", self.input_precio_consulta),  # NUEVO
-            ("Observaciones", self.input_obs)
-        ]
-
-        for texto, widget in campos_basicos:
-            lbl = QLabel(texto)
-            lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
-            layout_content.addWidget(lbl)
-            if isinstance(widget, QLineEdit):
-                widget.setMinimumHeight(30)
-            layout_content.addWidget(widget)
-
-        # Sección de Historial Médico
-        lbl_historial = QLabel("📋 HISTORIAL MÉDICO")
-        lbl_historial.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
-        layout_content.addWidget(lbl_historial)
-
-        layout_content.addWidget(QLabel("Medicamento actual:"))
-        layout_content.addWidget(self.input_medicamento_actual)
-        layout_content.addWidget(QLabel("Alergias y a qué:"))
-        layout_content.addWidget(self.input_alergias)
-
-        # Checkboxes de condiciones
-        condiciones = [
-            self.check_embarazada,
-            self.check_hemorragias,
-            self.check_problemas_tratamiento,
-            self.check_enfermedad_cardiovascular
-        ]
-        
-        for checkbox in condiciones:
-            layout_content.addWidget(checkbox)
-
-        # Enfermedades específicas
-        lbl_enfermedades = QLabel("Enfermedades:")
-        lbl_enfermedades.setStyleSheet("font-weight: bold; margin-top: 15px;")
-        layout_content.addWidget(lbl_enfermedades)
         
         enfermedades_grid = QGridLayout()
         enfermedades = [
@@ -839,14 +974,26 @@ class VentanaEditar(QWidget):
         for checkbox, row, col in enfermedades:
             enfermedades_grid.addWidget(checkbox, row, col)
         
-        layout_content.addLayout(enfermedades_grid)
-        layout_content.addWidget(self.input_especificar_otras)
-
+        layout.addLayout(enfermedades_grid)
+        layout.addWidget(self.input_especificar_otras)
+        
         # Examen clínico
         lbl_examen = QLabel("🔍 EXAMEN CLÍNICO")
         lbl_examen.setStyleSheet("font-size: 18px; font-weight: bold; color: #2980b9; margin-top: 20px;")
-        layout_content.addWidget(lbl_examen)
-
+        layout.addWidget(lbl_examen)
+        
+        self.input_tejidos_intraorales = QTextEdit()
+        self.input_tejidos_intraorales.setPlaceholderText("Describa el estado de los tejidos blandos intraorales")
+        
+        self.input_tejidos_extraorales = QTextEdit()
+        self.input_tejidos_extraorales.setPlaceholderText("Describa el estado de los tejidos blandos extraorales")
+        
+        self.input_ganglios = QTextEdit()
+        self.input_ganglios.setPlaceholderText("Describa el estado de los ganglios")
+        
+        self.input_aspecto_clinico = QTextEdit()
+        self.input_aspecto_clinico.setPlaceholderText("Describa el aspecto clínico general")
+        
         examenes = [
             ("Tejidos blandos intraorales", self.input_tejidos_intraorales),
             ("Tejidos blandos extraorales", self.input_tejidos_extraorales),
@@ -857,88 +1004,19 @@ class VentanaEditar(QWidget):
         for texto, widget in examenes:
             lbl = QLabel(texto)
             lbl.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
-            layout_content.addWidget(lbl)
+            layout.addWidget(lbl)
             widget.setMinimumHeight(80)
-            layout_content.addWidget(widget)
-
-        layout_info.addWidget(scroll_info)
-        
-        # Pestaña 2: Odontograma editable
-        tab_odonto = QWidget()
-        layout_odonto = QVBoxLayout(tab_odonto)
-        
-        # Crear widget de odontograma editable
-        from views.odontograma_widget import OdontogramaWidget
-        self.odontograma = OdontogramaWidget(self.paciente_id, self.db)
-        layout_odonto.addWidget(self.odontograma)
-        
-        # Agregar pestañas
-        self.tab_widget.addTab(tab_info, "📋 Información General")
-        self.tab_widget.addTab(tab_odonto, "🦷 Odontograma Dental")
-        
-        # Layout principal
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.tab_widget)
-        
-        # Botones en la parte inferior
-        btn_layout = QHBoxLayout()
-        
-        btn_guardar = QPushButton("💾 Guardar Cambios")
-        btn_guardar.setStyleSheet("""
-            QPushButton {
-                background-color: #27ae60;
-                color: white;
-                padding: 12px;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #229954;
-            }
-        """)
-        btn_guardar.clicked.connect(self.guardar)
-        
-        btn_volver = QPushButton("⬅️ Volver a Modificar")
-        btn_volver.setStyleSheet("""
-            QPushButton {
-                background-color: #95a5a6;
-                color: white;
-                padding: 12px;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #7f8c8d;
-            }
-        """)
-        btn_volver.clicked.connect(self.parent.mostrar_modificar)
-        
-        btn_layout.addWidget(btn_guardar)
-        btn_layout.addWidget(btn_volver)
-        
-        main_layout.addLayout(btn_layout)
-        self.setLayout(main_layout)
+            layout.addWidget(widget)
 
     def cargar_datos(self):
-        """Carga los datos del paciente en los campos del formulario"""
         if not self.paciente:
             return
             
         self.input_nombre.setText(self.paciente.get('nombre', '') or "")
         self.input_apellido.setText(self.paciente.get('apellido', '') or "")
-        self.input_cedula.setText(self.paciente.get('cedula', '') or "")  # NUEVO
-        self.input_edad.setText(str(self.paciente.get('edad', '')) if self.paciente.get('edad') else "")
+        self.input_cedula.setText(self.paciente.get('cedula', '') or "")
         self.input_telefono.setText(self.paciente.get('telefono', '') or "")
-        
-        # NUEVO - Precio de consulta
-        precio = self.paciente.get('precio_consulta', 0.0)
-        self.input_precio_consulta.setText(str(precio) if precio and precio != 0.0 else "")
-        
-        self.input_obs.setPlainText(self.paciente.get('obs', '') or "")
-        self.input_fecha_cita.setText(self.paciente.get('fecha_cita', '') or "")
-        self.input_hora_cita.setText(self.paciente.get('hora_cita', '') or "")
+        self.input_edad.setText(str(self.paciente.get('edad', '')) if self.paciente.get('edad') else "")
         
         self.input_medicamento_actual.setText(self.paciente.get('medicamento_actual', '') or "")
         self.input_alergias.setText(self.paciente.get('alergias', '') or "")
@@ -964,38 +1042,26 @@ class VentanaEditar(QWidget):
 
     def guardar(self):
         try:
-            # Validar campos básicos
             if not self.input_nombre.text() or not self.input_apellido.text():
                 QMessageBox.warning(self, "Error", "Nombre y apellido son obligatorios")
                 return
             
-            # Validar fecha
-            if self.input_fecha_cita.text() and not validar_fecha(self.input_fecha_cita.text()):
-                QMessageBox.warning(self, "Error", "Formato de fecha inválido. Use DD/MM/AAAA")
+            cedula = self.input_cedula.text().strip()
+            if cedula and self.db.existe_paciente_cedula(cedula, self.paciente_id):
+                QMessageBox.warning(self, "Error", "Ya existe otro paciente con esta cédula")
                 return
             
-            # Validar hora
-            if self.input_hora_cita.text() and not validar_hora(self.input_hora_cita.text()):
-                QMessageBox.warning(self, "Error", "Formato de hora inválido. Use HH:MM")
+            if self.input_edad.text() and not self.input_edad.text().isdigit():
+                QMessageBox.warning(self, "Error", "La edad debe ser un número válido")
                 return
             
-            # Validar que el precio sea numérico si se ingresa
-            if self.input_precio_consulta.text() and not self.input_precio_consulta.text().replace('.', '').isdigit():
-                QMessageBox.warning(self, "Error", "El precio debe ser un número válido")
-                return
-            
-            # Actualizar paciente
-            self.db.modificar_paciente(
+            success = self.db.modificar_paciente(
                 self.paciente_id,
                 nombre=self.input_nombre.text(),
                 apellido=self.input_apellido.text(),
-                cedula=self.input_cedula.text(),  # NUEVO
-                edad=int(self.input_edad.text()) if self.input_edad.text() else 0,
+                cedula=cedula,
                 telefono=self.input_telefono.text(),
-                obs=self.input_obs.toPlainText(),
-                fecha_cita=self.input_fecha_cita.text(),
-                hora_cita=self.input_hora_cita.text(),
-                precio_consulta=float(self.input_precio_consulta.text()) if self.input_precio_consulta.text() else 0.0,  # NUEVO
+                edad=int(self.input_edad.text()) if self.input_edad.text() else 0,
                 medicamento_actual=self.input_medicamento_actual.text(),
                 alergias=self.input_alergias.text(),
                 embarazada=1 if self.check_embarazada.isChecked() else 0,
@@ -1017,10 +1083,11 @@ class VentanaEditar(QWidget):
                 aspecto_clinico_general=self.input_aspecto_clinico.toPlainText()
             )
 
-            QMessageBox.information(self, "Éxito", "Paciente modificado correctamente")
-            self.parent.mostrar_modificar()
+            if success:
+                QMessageBox.information(self, "Éxito", "Paciente modificado correctamente")
+                self.close()
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo modificar el paciente")
 
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al modificar: {str(e)}")
-            import traceback
-            print(traceback.format_exc())

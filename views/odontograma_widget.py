@@ -66,9 +66,9 @@ class DienteWidget(QWidget):
         self.update()
         
 class OdontogramaWidget(QWidget):
-    def __init__(self, paciente_id, db):
+    def __init__(self, consulta_id, db):
         super().__init__()
-        self.paciente_id = paciente_id
+        self.consulta_id = consulta_id  # Usar consulta_id en lugar de paciente_id
         self.db = db
         self.dientes = {}
         self.diente_actual = None
@@ -140,50 +140,65 @@ class OdontogramaWidget(QWidget):
         self.cargar_datos_cara()
 
     def cargar_datos_cara(self):
-        if not self.diente_actual or not self.cara_actual: return
-        registros = self.db.obtener_odontograma_paciente(self.paciente_id)
+        if not self.diente_actual or not self.cara_actual: 
+            return
+        
+        registros = self.db.obtener_odontograma_consulta(self.consulta_id)
         for num, cara, estado, proc, obs, fecha in registros:
-            if num==self.diente_actual and cara==self.cara_actual:
+            if num == self.diente_actual and cara == self.cara_actual:
                 idx = self.combo_estado.findData(estado)
-                if idx>=0: self.combo_estado.setCurrentIndex(idx)
+                if idx >= 0: 
+                    self.combo_estado.setCurrentIndex(idx)
                 self.input_procedimiento.setPlainText(proc or "")
                 self.input_observaciones.setPlainText(obs or "")
                 return
+        
+        # Si no existe, establecer valores por defecto
         self.combo_estado.setCurrentIndex(0)
         self.input_procedimiento.clear()
         self.input_observaciones.clear()
 
     def guardar_cambios(self):
         if not self.diente_actual or not self.cara_actual:
-            QMessageBox.warning(self, "Error","Seleccione un diente")
+            QMessageBox.warning(self, "Error", "Seleccione un diente")
             return
+        
         estado = self.combo_estado.currentData()
         proc = self.input_procedimiento.toPlainText()
         obs = self.input_observaciones.toPlainText()
-        success = self.db.guardar_odontograma(self.paciente_id,self.diente_actual,self.cara_actual,
-                                              estado,proc,obs)
+        
+        success = self.db.guardar_odontograma(
+            self.consulta_id,  # Usar consulta_id
+            self.diente_actual, 
+            self.cara_actual,
+            estado, 
+            proc, 
+            obs
+        )
+        
         if success:
-            self.dientes[self.diente_actual].actualizar_estado(self.cara_actual,estado)
-            QMessageBox.information(self,"Éxito","Cambios guardados")
+            self.dientes[self.diente_actual].actualizar_estado(self.cara_actual, estado)
+            QMessageBox.information(self, "Éxito", "Cambios guardados")
         else:
-            QMessageBox.critical(self,"Error","No se pudo guardar")
+            QMessageBox.critical(self, "Error", "No se pudo guardar")
 
     def limpiar_cara(self):
         if not self.diente_actual or not self.cara_actual:
-            QMessageBox.warning(self, "Error","Seleccione un diente")
+            QMessageBox.warning(self, "Error", "Seleccione un diente")
             return
-        success = self.db.eliminar_registro_odontograma(self.paciente_id,self.diente_actual,self.cara_actual)
+        
+        success = self.db.eliminar_registro_odontograma(self.consulta_id, self.diente_actual, self.cara_actual)
         if success:
-            self.dientes[self.diente_actual].actualizar_estado(self.cara_actual,"sano")
+            self.dientes[self.diente_actual].actualizar_estado(self.cara_actual, "sano")
             self.input_procedimiento.clear()
             self.input_observaciones.clear()
             self.combo_estado.setCurrentIndex(0)
-            QMessageBox.information(self,"Éxito","Cara limpiada")
+            QMessageBox.information(self, "Éxito", "Cara limpiada")
         else:
-            QMessageBox.critical(self,"Error","No se pudo limpiar")
+            QMessageBox.critical(self, "Error", "No se pudo limpiar")
 
     def cargar_odontograma(self):
-        registros = self.db.obtener_odontograma_paciente(self.paciente_id)
-        for num,cara,estado,proc,obs,fecha in registros:
+        registros = self.db.obtener_odontograma_consulta(self.consulta_id)
+        for num, cara, estado, proc, obs, fecha in registros:
             if num in self.dientes:
-                self.dientes[num].actualizar_estado(cara,estado)
+                self.dientes[num].actualizar_estado(cara, estado)
