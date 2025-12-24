@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel, QGridLayout, QMessageBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QScrollArea, QLabel, QGridLayout, QMessageBox, QPushButton, QWidget
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QPainter, QBrush, QColor, QPen, QFont
 
@@ -69,16 +69,16 @@ class DienteWidget(QWidget):
                 break
 
 class OdontogramaViewWidget(QWidget):
-    def __init__(self, paciente_id, db):
+    def __init__(self, consulta_id, db):
         super().__init__()
-        self.paciente_id = paciente_id
+        self.consulta_id = consulta_id  # Recibe consulta_id, no paciente_id
         self.db = db
         self.dientes = {}
         self.setup_ui()
         self.cargar_odontograma()
 
     def setup_ui(self):
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
         titulo = QLabel("🦷 Odontograma - Vista")
@@ -101,14 +101,39 @@ class OdontogramaViewWidget(QWidget):
             self.dientes[i] = diente
 
         layout.addWidget(scroll)
-        self.setLayout(layout)
 
     def cargar_odontograma(self):
         try:
-            registros = self.db.obtener_odontograma_paciente(self.paciente_id)
+            registros = self.db.obtener_odontograma_consulta(self.consulta_id)
             for num, cara, estado, procedimiento, observaciones, fecha in registros:
                 if num in self.dientes:
                     tooltip = f"Procedimiento: {procedimiento or ''}\nObservaciones: {observaciones or ''}"
+                    if fecha:
+                        tooltip += f"\nFecha: {fecha}"
                     self.dientes[num].actualizar_estado(cara, estado, tooltip)
         except Exception as e:
             print(f"Error cargando odontograma: {e}")
+            # Método alternativo si hay error de estructura
+            try:
+                registros = self.db.obtener_odontograma_consulta(self.consulta_id)
+                for registro in registros:
+                    try:
+                        # Manejar diferentes estructuras de tuplas
+                        if len(registro) == 6:
+                            num, cara, estado, procedimiento, observaciones, fecha = registro
+                        elif len(registro) == 5:
+                            num, cara, estado, procedimiento, observaciones = registro
+                            fecha = ""
+                        else:
+                            continue
+                        
+                        if num in self.dientes:
+                            tooltip = f"Procedimiento: {procedimiento or ''}\nObservaciones: {observaciones or ''}"
+                            if fecha:
+                                tooltip += f"\nFecha: {fecha}"
+                            self.dientes[num].actualizar_estado(cara, estado, tooltip)
+                    except Exception as e2:
+                        print(f"Error procesando registro: {e2}")
+                        continue
+            except Exception as e3:
+                print(f"Error en método alternativo: {e3}")

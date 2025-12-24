@@ -5,7 +5,7 @@ from views.login_window import VentanaLogin
 from views.inicio_window import VentanaInicio
 from utilidades.helpers import hay_internet
 from config.config_manager import obtener_ruta_onedrive
-import os,sys
+import os, sys
 import shutil
 from datetime import datetime
 
@@ -55,15 +55,14 @@ class SistemaPacientes(QMainWindow):
             
             if hay_internet() and ruta_onedrive and os.path.exists(ruta_onedrive):
                 try:
-                    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    excel_filename = f"pacientes_excel_.xlsx"
-                    db_filename = f"pacientes_base_datos.db"
+                    excel_filename = f"consultas_exportadas.xlsx"
+                    db_filename = f"odontologia_backup.db"
                     
                     excel_ruta = os.path.join(ruta_onedrive, excel_filename)
                     db_ruta = os.path.join(ruta_onedrive, db_filename)
                     
-                    self.db.exportar_pacientes_a_excel(excel_ruta)
-                    print(f"✅ Copia de seguridad en Excel exportada a: {excel_ruta}")
+                    self.db.exportar_consultas_a_excel(excel_ruta)
+                    print(f"✅ Copia de seguridad de consultas exportada a: {excel_ruta}")
                     
                     db_path = self.db.obtener_ruta_db()
                     shutil.copy2(db_path, db_ruta)
@@ -95,14 +94,9 @@ class SistemaPacientes(QMainWindow):
         self.setCentralWidget(self.ventana_modificar)
 
     def mostrar_cargar(self):
-        from views.patient_window import VentanaCargar
-        self.ventana_cargar = VentanaCargar(self, self.db)
+        from views.patient_window import VentanaCargarPaciente
+        self.ventana_cargar = VentanaCargarPaciente(self, self.db)
         self.setCentralWidget(self.ventana_cargar)
-        
-    def mostrar_editar(self, paciente_id):
-        from views.patient_window import VentanaEditar
-        self.ventana_editar = VentanaEditar(self, self.db, paciente_id)
-        self.setCentralWidget(self.ventana_editar)
         
     def mostrar_calendario(self):
         from views.calendar_window import VentanaCalendario
